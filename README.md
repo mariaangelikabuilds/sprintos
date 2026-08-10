@@ -58,4 +58,4 @@ curl -X POST https://YOUR-INSTANCE/webhook/YOUR-ID/sprintos-research \
   -d '{"brand_name":"...","product":"...","target_market":"...","competitors":"..."}'
 ```
 
-A full run takes about five minutes, four sequential agent stages plus four web searches. If your gateway times out on long synchronous webhooks, read the result from the execution log instead.
+A full run takes about five minutes, five sequential LLM stages plus four web searches. On n8n cloud the synchronous HTTP response will not survive that: Cloudflare cuts the connection at roughly 100 seconds with a 524 while the execution keeps running and finishes green (verified 2026-08-10, execution completed in 4m23s after the caller got its 524). Read the result from the execution log, or front the webhook with a queue-and-poll pattern if a caller needs the payload delivered.
