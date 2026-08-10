@@ -53,7 +53,7 @@ The source blueprint had six stages, including workspace setup, static creative 
 The workflow source lives at [workflow/sprintos-research-angles.ts](./workflow/sprintos-research-angles.ts) in n8n Workflow SDK form. Recreate it on any n8n instance through the n8n MCP (`create_workflow_from_code`), or use it as the blueprint for hand-building the 21 nodes. You need an Anthropic credential for the five chat-model nodes and a Firecrawl credential for the search node; on n8n cloud, managed n8n credits cover both with zero credential setup. Publish, then POST a brief:
 
 ```
-curl -X POST https://YOUR-INSTANCE/webhook/YOUR-ID/sprintos-research \
+curl -X POST https://YOUR-INSTANCE/webhook/sprintos-research \
   -H "Content-Type: application/json" \
   -d '{"brand_name":"...","product":"...","target_market":"...","competitors":"..."}'
 ```
