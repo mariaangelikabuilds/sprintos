@@ -13,7 +13,10 @@ export function SprintView({ sprint, onDecided }: { sprint: SprintDetail; onDeci
       <p className="brief-line">{sprint.brief.product}. For {sprint.brief.target_market}.
         {sprint.brief.competitors ? ` Against ${sprint.brief.competitors}.` : ''}</p>
 
-      {!pkg && sprint.status === 'running' && (
+      {!pkg && sprint.status === 'running' && statusLabel(sprint) === 'stale' && (
+        <p className="err">This run started over ten minutes ago and no results have arrived. The run may still have finished on n8n; check its execution log there. Results only land here once the workflow's delivery step can reach this dashboard.</p>
+      )}
+      {!pkg && sprint.status === 'running' && statusLabel(sprint) !== 'stale' && (
         <p className="note">The pipeline is working: query planning, four web searches, research, angles, critique, copy. This page refreshes itself.</p>
       )}
       {!pkg && sprint.status === 'failed' && (
