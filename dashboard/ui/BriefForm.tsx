@@ -3,12 +3,12 @@ import { useState } from 'react';
 const empty = { brand_name: '', product: '', competitors: '' };
 
 const AUDIENCES = [
-  'first-time buyers',
-  'upgrading from a cheap one',
-  'buy-it-for-life types',
-  'hobbyists',
-  'gift shoppers',
-  'wants the premium option'
+  'buying this for the first time',
+  'replacing a cheap one',
+  'wants it to last for years',
+  'serious about the hobby',
+  'buying it as a gift',
+  'wants the best money can buy'
 ];
 
 export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
