@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { startSprint } from './api.js';
 
 const empty = { brand_name: '', product: '', competitors: '' };
 
@@ -15,7 +16,6 @@ export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
   const [brief, setBrief] = useState(empty);
   const [picked, setPicked] = useState<string[]>([]);
   const [customMarket, setCustomMarket] = useState('');
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
   const set = (k: keyof typeof empty) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -26,22 +26,14 @@ export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
 
   const targetMarket = [...picked, customMarket.trim()].filter(Boolean).join('; ');
 
-  async function submit(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-    setSending(true);
     setError('');
-    const res = await fetch('/api/sprints', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...brief, target_market: targetMarket })
-    });
-    setSending(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? 'brief rejected');
+    if (!brief.brand_name.trim() || !brief.product.trim()) {
+      setError('brand and product are required');
       return;
     }
-    const { id } = await res.json();
+    const id = startSprint({ ...brief, target_market: targetMarket });
     setBrief(empty);
     setPicked([]);
     setCustomMarket('');
@@ -73,7 +65,7 @@ export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
       </fieldset>
       <label>Competitors<input value={brief.competitors} onChange={set('competitors')} placeholder="Lodge, Field Company, Smithey" /></label>
       {error && <p className="err">{error}</p>}
-      <button disabled={sending || !targetMarket} type="submit">{sending ? 'Sending brief' : 'Run the sprint'}</button>
+      <button disabled={!targetMarket} type="submit">Run the sprint</button>
       <p className="note">A run takes about five minutes: four web searches and five model stages.</p>
     </form>
   );

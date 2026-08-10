@@ -1,8 +1,14 @@
 # SprintOS
 
-An ad-creative sprint pipeline on n8n: POST a brand brief, get back a reviewed ad package. Live web research, 12 candidate angles, a critic that kills 8 of them, and full paid-social copy for the 4 survivors. Every run ends at `status: "awaiting human review"`; nothing publishes anywhere.
+An ad-creative sprint pipeline on n8n with a review dashboard on Vercel: submit a brand brief, get back a reviewed ad package. Live web research, 12 candidate angles, a critic that kills 8 of them, and full paid-social copy for the 4 survivors. Every run parks at human review; nothing publishes anywhere.
 
-Built 2026-08-10. Runs on mariaangelika.app.n8n.cloud, workflow `PPhDpEGDV6ZzE8pp`, with claude-sonnet-4-6 on all five LLM stages.
+Built 2026-08-10. Pipeline on mariaangelika.app.n8n.cloud (workflow `PPhDpEGDV6ZzE8pp`, claude-sonnet-4-6 on all five LLM stages). Dashboard at https://sprintos-one.vercel.app.
+
+## The dashboard has no backend
+
+The review UI is a static React page. Sprint state lives in an n8n data table; the research workflow upserts a row when a brief arrives and writes the finished package into the same row at the end, and a second n8n workflow (`SprintOS · API`) exposes list, detail, and review-decision webhooks over that table. The browser fires a brief at the pipeline and forgets the response on purpose: the run takes ~5 minutes and n8n cloud's edge cuts synchronous responses at ~100 seconds, so results travel through the data table instead of the HTTP response. Review decisions are gated by a review key checked inside the API workflow, and each ad gets an explicit approve or kill verdict recorded back to the row.
+
+An earlier version was a Hono + SQLite server with a callback route, built and verified locally. It was deleted the same day: once the workflow writes state to a table n8n owns, a server that only relays JSON is a machine that can be replaced with nothing.
 
 ## The pipeline
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SprintDetail, SprintSummary } from './types.js';
+import { listSprints, getSprint } from './api.js';
 import { BriefForm } from './BriefForm.js';
 import { SprintList } from './SprintList.js';
 import { SprintView } from './SprintView.js';
@@ -10,16 +11,12 @@ export function App() {
   const [detail, setDetail] = useState<SprintDetail | null>(null);
 
   const refresh = useCallback(async () => {
-    const res = await fetch('/api/sprints');
-    if (!res.ok) return;
-    const data = await res.json();
-    setSprints(data.sprints);
+    setSprints(await listSprints());
   }, []);
 
   const loadDetail = useCallback(async (id: string) => {
-    const res = await fetch(`/api/sprints/${id}`);
-    if (!res.ok) return;
-    setDetail(await res.json());
+    const d = await getSprint(id);
+    if (d) setDetail(d);
   }, []);
 
   useEffect(() => {

@@ -16,7 +16,7 @@ Ad-creative sprint automation for performance marketing: brief in, reviewed ad p
 - One OAuth away (not wired): Google Drive, Trello. Stage 1 workspace setup adapts to Airtable + Slack instead.
 - Cut: Meta Ads reporting. No ad account, so no reporting stage. Ad copy is written to standard paid-social constraints (primary text under 125 words, headline under 40 chars) without targeting any platform's API.
 
-**Dashboard.** If/when a UI is needed: Hono + SQLite on Fly.io (the Meridian pattern), not Supabase (account suspended) and not a speculative React SPA before the pipeline has users.
+**Dashboard.** Shipped 2026-08-10 at https://sprintos-one.vercel.app, and the architecture changed on Angel's call to deploy on Vercel: a static React page with NO backend of its own. All state lives in an n8n data table (`sprints`, id 2XZZy3r9LKshQ5rD); the research workflow upserts a row when a brief arrives and writes the finished package into it, and a second workflow (`SprintOS · API`, id 5avcJ6zALawejboW) serves list, detail, and key-gated review-decision endpoints over the same table with CORS open. The original Hono + SQLite + Fly server design was built and locally verified first, then deleted; its callback route died with it because the workflow now writes results to the table directly. Fire-and-forget briefs from the browser make the ~100-second edge timeout irrelevant.
 
 ## Stage map
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Ad, Decision, SprintDetail } from './types.js';
+import { sendDecisions } from './api.js';
 import { statusLabel } from './SprintList.js';
 
 export function SprintView({ sprint, onDecided }: { sprint: SprintDetail; onDecided: () => void }) {
@@ -97,18 +98,9 @@ function AdsBlock({ sprint, onDecided }: { sprint: SprintDetail; onDecided: () =
       verdict: verdicts.get(a.angle_id) ?? 'killed',
       note: ''
     }));
-    const res = await fetch(`/api/sprints/${sprint.id}/decisions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-review-key': key },
-      body: JSON.stringify({ decisions })
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? 'decision rejected');
-      return;
-    }
-    setError('');
-    onDecided();
+    const err = await sendDecisions(sprint.id, key, decisions);
+    setError(err);
+    if (!err) onDecided();
   }
 
   return (

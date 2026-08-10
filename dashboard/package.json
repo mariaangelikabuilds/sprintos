@@ -3,24 +3,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env.local --import tsx server/index.ts",
-    "ui:dev": "vite",
-    "ui:build": "vite build",
-    "start": "tsx server/index.ts"
+    "dev": "vite",
+    "build": "vite build"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.0",
-    "better-sqlite3": "^13.0.3",
-    "hono": "^4.13.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.1.0",
-    "tsx": "^4.20.0",
     "typescript": "^5.9.0",
     "vite": "^7.2.0"
   }
