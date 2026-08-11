@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { startSprint } from './api.js';
+import { ApiError, startSprint } from './api.js';
 
 const empty = { brand_name: '', product: '', competitors: '' };
 
@@ -7,12 +7,17 @@ const AUDIENCES = [
   'buying this for the first time',
   'replacing a cheap one',
   'wants it to last for years',
-  'serious about the hobby',
+  'wants it done for them',
+  'shopping around for quotes',
   'buying it as a gift',
+  'serious about the hobby',
   'wants the best money can buy'
 ];
 
-export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
+export function BriefForm({ onCreated, onApiError }: {
+  onCreated: (id: string) => void;
+  onApiError: (e: ApiError) => void;
+}) {
   const [brief, setBrief] = useState(empty);
   const [picked, setPicked] = useState<string[]>([]);
   const [customMarket, setCustomMarket] = useState('');
@@ -33,7 +38,10 @@ export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
       setError('brand and product are required');
       return;
     }
-    const id = startSprint({ ...brief, target_market: targetMarket });
+    const id = startSprint({ ...brief, target_market: targetMarket }, (e) => {
+      setError(`That brief never reached the pipeline, so the sprint below is not running. ${e.message}`);
+      if (e.keyRejected) onApiError(e);
+    });
     setBrief(empty);
     setPicked([]);
     setCustomMarket('');
@@ -43,8 +51,8 @@ export function BriefForm({ onCreated }: { onCreated: (id: string) => void }) {
   return (
     <form className="brief-form" onSubmit={submit}>
       <h2>New sprint</h2>
-      <label>Brand<input value={brief.brand_name} onChange={set('brand_name')} placeholder="Loam & Ember" /></label>
-      <label>Product<textarea value={brief.product} onChange={set('product')} rows={2} placeholder="small-batch cast iron skillets, flaxseed pre-season" /></label>
+      <label>Brand or business<input value={brief.brand_name} onChange={set('brand_name')} placeholder="Loam & Ember" /></label>
+      <label>What you sell, product or service<textarea value={brief.product} onChange={set('product')} rows={2} placeholder="cast iron skillets / aircon deep-clean service / wedding photography" /></label>
       <fieldset className="audience">
         <legend>Target market</legend>
         <div className="chips">

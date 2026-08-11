@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import type { Ad, Decision, SprintDetail } from './types.js';
-import { sendDecisions } from './api.js';
+import { ApiError, sendDecisions } from './api.js';
 import { statusLabel } from './SprintList.js';
 
-export function SprintView({ sprint, onDecided }: { sprint: SprintDetail; onDecided: () => void }) {
+type Fail = (e: ApiError) => void;
+
+export function SprintView({ sprint, onDecided, onApiError }: {
+  sprint: SprintDetail;
+  onDecided: () => void;
+  onApiError: Fail;
+}) {
   const pkg = sprint.package;
   return (
     <article className="sprint-view">
@@ -28,7 +34,7 @@ export function SprintView({ sprint, onDecided }: { sprint: SprintDetail; onDeci
         <>
           <ResearchBlock pkg={pkg} />
           <AnglesBlock pkg={pkg} />
-          <AdsBlock sprint={sprint} onDecided={onDecided} />
+          <AdsBlock sprint={sprint} onDecided={onDecided} onApiError={onApiError} />
         </>
       )}
     </article>
@@ -80,27 +86,41 @@ function AnglesBlock({ pkg }: { pkg: NonNullable<SprintDetail['package']> }) {
   );
 }
 
-function AdsBlock({ sprint, onDecided }: { sprint: SprintDetail; onDecided: () => void }) {
+function AdsBlock({ sprint, onDecided, onApiError }: {
+  sprint: SprintDetail;
+  onDecided: () => void;
+  onApiError: Fail;
+}) {
   const pkg = sprint.package!;
   const done = sprint.status === 'reviewed';
   const prior = new Map((sprint.decisions ?? []).map((d) => [d.angle_id, d.verdict]));
   const [verdicts, setVerdicts] = useState<Map<number, 'approved' | 'killed'>>(new Map(prior));
-  const [key, setKey] = useState(localStorage.getItem('review_key') ?? '');
   const [error, setError] = useState('');
 
   const decide = (id: number, v: 'approved' | 'killed') =>
     setVerdicts((prev) => new Map(prev).set(id, v));
 
   async function submit() {
-    localStorage.setItem('review_key', key);
-    const decisions: Decision[] = pkg.ads.map((a) => ({
-      angle_id: a.angle_id,
-      verdict: verdicts.get(a.angle_id) ?? 'killed',
-      note: ''
-    }));
-    const err = await sendDecisions(sprint.id, key, decisions);
-    setError(err);
-    if (!err) onDecided();
+    // No verdict is not a verdict. This used to default the undecided to
+    // 'killed', which is a decision nobody made on a tool whose whole claim is
+    // that a human made every one.
+    const judged = pkg.ads.map((ad) => ({ id: ad.angle_id, verdict: verdicts.get(ad.angle_id) }));
+    const undecided = judged.filter((j) => !j.verdict).length;
+    if (undecided > 0) {
+      setError(`${undecided} of ${pkg.ads.length} ads still need a verdict.`);
+      return;
+    }
+
+    const decisions: Decision[] = judged.map((j) => ({ angle_id: j.id, verdict: j.verdict!, note: '' }));
+    try {
+      await sendDecisions(sprint.id, decisions);
+      setError('');
+      onDecided();
+    } catch (e) {
+      const err = e instanceof ApiError ? e : new ApiError('The verdicts never reached n8n.');
+      setError(err.message);
+      if (err.keyRejected) onApiError(err);
+    }
   }
 
   return (
@@ -112,8 +132,7 @@ function AdsBlock({ sprint, onDecided }: { sprint: SprintDetail; onDecided: () =
       ))}
       {!done && (
         <div className="verdict-bar">
-          <input type="password" placeholder="review key" value={key} onChange={(e) => setKey(e.target.value)} />
-          <button onClick={submit} disabled={verdicts.size < pkg.ads.length || !key}>
+          <button onClick={submit} disabled={verdicts.size < pkg.ads.length}>
             Record {verdicts.size}/{pkg.ads.length} verdicts
           </button>
           {error && <span className="err">{error}</span>}
