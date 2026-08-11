@@ -4,7 +4,7 @@ import { ApiError, listSprints, getSprint } from './api.js';
 import { clearKey, readKey, saveKey } from './key.js';
 import { BriefForm } from './BriefForm.js';
 import { KeyGate } from './KeyGate.js';
-import { SprintList } from './SprintList.js';
+import { SprintList, isLive } from './SprintList.js';
 import { SprintView } from './SprintView.js';
 import { usePoll } from './poll.js';
 
@@ -61,8 +61,10 @@ export function App() {
   // Both gates close on their own: nothing is running, so there is nothing to
   // wait for. Re-evaluated on every render, and every poll causes one.
   const pending = Date.now() < pendingUntil;
-  usePoll(refresh, !!key && (pending || sprints.some((s) => s.status === 'running')));
-  usePoll(loadDetail, !!key && !!selectedId && (detail?.status === 'running' || (!detail && pending)));
+  // isLive, not status === 'running': a dead run keeps that status forever, and
+  // polling for it burned two executions a minute for as long as a tab stayed open.
+  usePoll(refresh, !!key && (pending || sprints.some(isLive)));
+  usePoll(loadDetail, !!key && !!selectedId && ((!!detail && isLive(detail)) || (!detail && pending)));
 
   function created(id: string) {
     setPendingUntil(Date.now() + PENDING_MS);

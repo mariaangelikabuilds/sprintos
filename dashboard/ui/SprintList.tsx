@@ -2,8 +2,20 @@ import type { SprintSummary } from './types.js';
 
 const STALE_MS = 10 * 60 * 1000;
 
+// A run that died mid-flight leaves its row saying 'running' forever, because
+// the only thing that would have changed it is the step that never happened.
+// Anything asking "is work still in flight?" has to exclude those, or it waits
+// on them for the life of the tab.
+export function isStale(s: SprintSummary): boolean {
+  return s.status === 'running' && Date.now() - Date.parse(s.created_at) > STALE_MS;
+}
+
+export function isLive(s: SprintSummary): boolean {
+  return s.status === 'running' && !isStale(s);
+}
+
 export function statusLabel(s: SprintSummary): string {
-  if (s.status === 'running' && Date.now() - Date.parse(s.created_at) > STALE_MS) return 'stale';
+  if (isStale(s)) return 'stale';
   if (s.status === 'review') return 'awaiting review';
   return s.status;
 }
