@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ApiError, startSprint } from './api.js';
 
-const empty = { brand_name: '', product: '', competitors: '' };
+const empty = { brand_name: '', product: '', location: '', competitors: '' };
 
 const AUDIENCES = [
   'buying this for the first time',
@@ -53,6 +53,7 @@ export function BriefForm({ onCreated, onApiError }: {
       <h2>New sprint</h2>
       <label>Brand or business<input value={brief.brand_name} onChange={set('brand_name')} placeholder="Loam & Ember" /></label>
       <label>What you sell, product or service<textarea value={brief.product} onChange={set('product')} rows={2} placeholder="cast iron skillets / aircon deep-clean service / wedding photography" /></label>
+      <label>Where it is<input value={brief.location} onChange={set('location')} placeholder="Calapan City, Oriental Mindoro" /></label>
       <fieldset className="audience">
         <legend>Target market</legend>
         <div className="chips">
@@ -74,7 +75,7 @@ export function BriefForm({ onCreated, onApiError }: {
       <label>Competitors<input value={brief.competitors} onChange={set('competitors')} placeholder="Lodge, Field Company, Smithey" /></label>
       {error && <p className="err">{error}</p>}
       <button disabled={!targetMarket} type="submit">Run the sprint</button>
-      <p className="note">A run takes about five minutes: four web searches and five model stages.</p>
+      <p className="note">A run takes about five minutes. Give the city for a real shop or service; without it the research cannot tell your business apart from the category.</p>
     </form>
   );
 }

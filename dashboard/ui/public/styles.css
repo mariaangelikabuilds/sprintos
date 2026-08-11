@@ -134,3 +134,11 @@ table.angles tr.cut { color: #8b8781; }
 .verdict-bar { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
 .verdict-bar input { border: var(--line); padding: 8px; font: inherit; background: #fff; }
 .verdict-bar button { width: auto; }
+
+.reject-box { border: var(--line); border-color: var(--rust); background: #fff; padding: 12px 14px; margin-top: 6px; }
+.reject-box label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.reject-box textarea {
+  display: block; width: 100%; margin-top: 6px; padding: 8px;
+  border: var(--line); background: var(--bone); font: inherit; font-size: 14px;
+}
+.reject-box .verdict-bar { margin-top: 10px; }

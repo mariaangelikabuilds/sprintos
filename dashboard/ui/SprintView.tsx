@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import type { Ad, Decision, SprintDetail } from './types.js';
-import { ApiError, sendDecisions } from './api.js';
+import { ApiError, rejectBatch, sendDecisions, startSprint } from './api.js';
 import { statusLabel } from './SprintList.js';
 
 type Fail = (e: ApiError) => void;
 
-export function SprintView({ sprint, onDecided, onApiError }: {
+export function SprintView({ sprint, onDecided, onApiError, onRerun }: {
   sprint: SprintDetail;
   onDecided: () => void;
   onApiError: Fail;
+  onRerun: (id: string) => void;
 }) {
   const pkg = sprint.package;
   return (
@@ -17,7 +18,7 @@ export function SprintView({ sprint, onDecided, onApiError }: {
         <h2>{sprint.brief.brand_name}</h2>
         <span className={`status s-${statusLabel(sprint).replace(' ', '-')}`}>{statusLabel(sprint)}</span>
       </header>
-      <p className="brief-line">{sprint.brief.product}. For {sprint.brief.target_market}.
+      <p className="brief-line">{sprint.brief.product}.{sprint.brief.location ? ` In ${sprint.brief.location}.` : ''} For {sprint.brief.target_market}.
         {sprint.brief.competitors ? ` Against ${sprint.brief.competitors}.` : ''}</p>
 
       {!pkg && sprint.status === 'running' && statusLabel(sprint) === 'stale' && (
@@ -34,7 +35,7 @@ export function SprintView({ sprint, onDecided, onApiError }: {
         <>
           <ResearchBlock pkg={pkg} />
           <AnglesBlock pkg={pkg} />
-          <AdsBlock sprint={sprint} onDecided={onDecided} onApiError={onApiError} />
+          <AdsBlock sprint={sprint} onDecided={onDecided} onApiError={onApiError} onRerun={onRerun} />
         </>
       )}
     </article>
@@ -86,16 +87,20 @@ function AnglesBlock({ pkg }: { pkg: NonNullable<SprintDetail['package']> }) {
   );
 }
 
-function AdsBlock({ sprint, onDecided, onApiError }: {
+function AdsBlock({ sprint, onDecided, onApiError, onRerun }: {
   sprint: SprintDetail;
   onDecided: () => void;
   onApiError: Fail;
+  onRerun: (id: string) => void;
 }) {
   const pkg = sprint.package!;
   const done = sprint.status === 'reviewed';
   const prior = new Map((sprint.decisions ?? []).map((d) => [d.angle_id, d.verdict]));
   const [verdicts, setVerdicts] = useState<Map<number, 'approved' | 'killed'>>(new Map(prior));
   const [error, setError] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const decide = (id: number, v: 'approved' | 'killed') =>
     setVerdicts((prev) => new Map(prev).set(id, v));
@@ -123,6 +128,27 @@ function AdsBlock({ sprint, onDecided, onApiError }: {
     }
   }
 
+  async function rejectAll() {
+    setBusy(true);
+    try {
+      await rejectBatch(sprint.id, reason.trim());
+      // The rerun carries the reason, so the next batch answers the objection
+      // instead of rolling the same dice again.
+      const nextId = startSprint(
+        { ...sprint.brief, rejected_feedback: reason.trim() },
+        (e) => { setError(e.message); if (e.keyRejected) onApiError(e); },
+      );
+      setError('');
+      onRerun(nextId);
+    } catch (e) {
+      const err = e instanceof ApiError ? e : new ApiError('The rejection never reached n8n.');
+      setError(err.message);
+      if (err.keyRejected) onApiError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section>
       <h3>Ads{done ? ', reviewed' : ', awaiting your verdict'}</h3>
@@ -130,12 +156,40 @@ function AdsBlock({ sprint, onDecided, onApiError }: {
         <AdCard key={ad.angle_id} ad={ad} verdict={verdicts.get(ad.angle_id)} done={done}
           onDecide={(v) => decide(ad.angle_id, v)} />
       ))}
-      {!done && (
+      {!done && !rejecting && (
         <div className="verdict-bar">
           <button onClick={submit} disabled={verdicts.size < pkg.ads.length}>
             Record {verdicts.size}/{pkg.ads.length} verdicts
           </button>
+          <button type="button" className="ghost" onClick={() => setRejecting(true)}>
+            None of these work
+          </button>
           {error && <span className="err">{error}</span>}
+        </div>
+      )}
+      {!done && rejecting && (
+        <div className="reject-box">
+          <label>What is wrong with this batch?
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={3}
+              placeholder="too generic, wrong audience, the tone is off, it missed what we actually sell"
+            />
+          </label>
+          <p className="note">
+            This records the rejection and starts a fresh sprint on the same brief, with what you
+            wrote here handed to the angle and copy stages so they do not repeat themselves.
+          </p>
+          <div className="verdict-bar">
+            <button onClick={rejectAll} disabled={busy || reason.trim().length < 4}>
+              {busy ? 'Starting a new sprint' : 'Reject all and run again'}
+            </button>
+            <button type="button" className="ghost" onClick={() => { setRejecting(false); setError(''); }}>
+              Back
+            </button>
+            {error && <span className="err">{error}</span>}
+          </div>
         </div>
       )}
     </section>

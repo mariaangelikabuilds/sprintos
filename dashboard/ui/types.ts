@@ -1,6 +1,7 @@
 export type Brief = {
   brand_name: string;
   product: string;
+  location?: string;
   target_market: string;
   competitors?: string;
 };

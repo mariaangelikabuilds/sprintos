@@ -81,3 +81,16 @@ export async function sendDecisions(id: string, decisions: Decision[]): Promise<
   const data = await readJson(res);
   if (!data.reviewed) throw new ApiError('n8n did not confirm the verdicts were written.');
 }
+
+// Rejecting the whole batch is a different verdict from killing four ads one
+// by one: it says the direction was wrong, and the reason is what makes the
+// rerun different instead of a reroll of the same dice.
+export async function rejectBatch(id: string, reason: string): Promise<void> {
+  const res = await fetch(`${N8N}/sprintos-decide`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ sprint_id: id, rejected_all: true, reason, decisions: [] })
+  });
+  const data = await readJson(res);
+  if (!data.reviewed) throw new ApiError('n8n did not confirm the rejection was written.');
+}

@@ -90,7 +90,7 @@ export function App() {
             </aside>
             <main className="stage">
               {detail
-                ? <SprintView sprint={detail} onDecided={loadDetail} onApiError={fail} />
+                ? <SprintView sprint={detail} onDecided={loadDetail} onApiError={fail} onRerun={created} />
                 : <p className="empty">Pick a sprint, or send a brief to start one.</p>}
             </main>
           </div>
